@@ -1,8 +1,10 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, Form
+from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 import logging
+import os
 import uvicorn
 from datetime import datetime
 
@@ -26,14 +28,37 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Build allowed origins list from env var (comma-separated), or fall back to wildcard
+_raw_origins = os.getenv("CORS_ORIGINS", "*")
+cors_origins: List[str] = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=cors_origins,
     allow_credentials=False,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=86400,  # Cache preflight for 24 h
 )
+
+# Explicit OPTIONS handler — safety net for Render's cold-start proxy behaviour.
+# The CORSMiddleware handles preflights normally, but this ensures a 200 is always
+# returned with the right headers even if middleware ordering causes issues.
+@app.options("/{rest_of_path:path}")
+async def preflight_handler(rest_of_path: str, request: Request) -> Response:
+    origin = request.headers.get("origin", "*")
+    allowed = "*" if cors_origins == ["*"] else (origin if origin in cors_origins else cors_origins[0])
+    return Response(
+        status_code=200,
+        headers={
+            "Access-Control-Allow-Origin": allowed,
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Max-Age": "86400",
+        },
+    )
 
 # Initialize components
 rag_pipeline = None
