@@ -1,9 +1,11 @@
 import type { NextConfig } from "next";
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
 /** @type {import('next').NextConfig} */
-const nextConfig:NextConfig = {
+const nextConfig: NextConfig = {
   reactStrictMode: true,
-  
+
   // Allow images from external sources if needed
   images: {
     remotePatterns: [
@@ -13,18 +15,15 @@ const nextConfig:NextConfig = {
       },
     ],
   },
-  
-  // Configure CORS for development
-  async headers() {
+
+  // Proxy all /api/* requests to the backend server-side.
+  // The browser always talks to the same origin (localhost:3000 / your deployed
+  // frontend domain), so no CORS preflight is ever triggered.
+  async rewrites() {
     return [
       {
         source: '/api/:path*',
-        headers: [
-          { key: 'Access-Control-Allow-Credentials', value: 'true' },
-          { key: 'Access-Control-Allow-Origin', value: '*' },
-          { key: 'Access-Control-Allow-Methods', value: 'GET,OPTIONS,PATCH,DELETE,POST,PUT' },
-          { key: 'Access-Control-Allow-Headers', value: 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version' },
-        ],
+        destination: `${BACKEND_URL}/:path*`,
       },
     ];
   },

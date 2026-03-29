@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// All requests go through Next.js's own server (/api/* is rewritten to the backend).
+// This means the browser never makes a cross-origin request → no CORS issues.
+const API_BASE_URL = '/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
