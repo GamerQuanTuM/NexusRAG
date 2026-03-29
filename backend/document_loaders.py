@@ -23,14 +23,15 @@ except ImportError:
 
 # Optional heavy loaders (require 'unstructured' package)
 try:
+    import unstructured  # Check if the actual package exists
     from langchain_community.document_loaders import UnstructuredMarkdownLoader
     from langchain_community.document_loaders import UnstructuredWordDocumentLoader
     from langchain_community.document_loaders import UnstructuredPowerPointLoader
     from langchain_community.document_loaders import UnstructuredExcelLoader
     HAS_UNSTRUCTURED = True
-except ImportError:
+except (ImportError, ModuleNotFoundError):
     HAS_UNSTRUCTURED = False
-    logger.warning("'unstructured' not installed. Word, PPT, Excel, and Markdown loaders are disabled.")
+    logger.info("'unstructured' not installed. Using lightweight loaders for supported formats.")
 
 
 class DocumentLoader:
