@@ -1,0 +1,17 @@
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+langchain==0.1.0
+langchain-community==0.0.10
+langchain-core==0.1.0
+langgraph==0.0.26
+langchain-openai==0.0.8
+supabase==1.1.1
+python-dotenv==1.0.0
+pydantic-settings==2.1.0
+sentence-transformers==2.2.2
+chromadb==0.4.22
+pypdf==3.17.4
+unstructured==0.10.30
+tiktoken==0.5.1
+langchain-text-splitters==0.0.1

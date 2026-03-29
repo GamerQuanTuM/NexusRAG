@@ -1,0 +1,26 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --color-background: #ffffff;
+  --color-foreground: #000000;
+  --color-card: #f9fafb;
+  --color-card-foreground: #1f2937;
+  --color-primary: #3b82f6;
+  --color-primary-foreground: #ffffff;
+  --color-muted: #f3f4f6;
+  --color-muted-foreground: #6b7280;
+  --color-accent: #f8fafc;
+}
+
+:root {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  color-scheme: light dark;
+}
+
+body {
+  font-family: var(--default-font-family), "Inter", sans-serif;
+  margin: 0;
+  min-height: 100vh;
+}
