@@ -170,15 +170,23 @@ npm run dev
 
 ## 🔧 Configuration (.env)
 
-| Variable | Description |
-|----------|-------------|
-| `SUPABASE_URL` | Your Supabase project URL |
-| `SUPABASE_KEY` | Supabase Anon Key |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase Service Role Key (for admin tasks) |
-| `OPENAI_API_KEY` | Your OpenAI API Key |
-| `EMBEDDING_MODEL` | Embedding model (default: `text-embedding-3-small`) |
-| `LLM_MODEL` | LLM model (default: `gpt-4o-mini`) |
-| `CHUNK_SIZE` | Size of document chunks for vectorization (default: `1000`) |
+| Variable | Description | Default / Example |
+|----------|-------------|-------------------|
+| `SUPABASE_URL` | Your Supabase project URL | `supabase_url` |
+| `SUPABASE_KEY` | Supabase Anon Key | `supabase_anon_key` |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase Service Role Key (for admin tasks) | `supabase_service_role` |
+| `OPENAI_API_KEY` | Your OpenAI API Key | `openai_api_key` |
+| `OPENAI_API_BASE` | Your OpenAI Base URL | `openai_base_url` |
+| `GEMINI_API_KEY` | Your Gemini API Key | `google_api_key` |
+| `EMBEDDING_MODEL` | Embedding model to use | `gemini-embedding-2-preview` |
+| `LLM_MODEL` | Large Language Model to use | `gpt-4o-mini` |
+| `HOST` | Server host address | `0.0.0.0` |
+| `PORT` | Server port number | `8000` |
+| `DEBUG` | Enable/Disable debug mode | `true` |
+| `VECTOR_STORE_TABLE_NAME` | Database table for vectors | `documents` |
+| `CHUNK_SIZE` | Size of document chunks for vectorization | `1000` |
+| `CHUNK_OVERLAP` | Overlap between consecutive chunks | `200` |
+
 
 ## 📚 API Endpoints
 
@@ -195,10 +203,10 @@ npm run dev
 ## 🔍 How It Works
 
 1. **Ingestion**: Documents are uploaded, parsed into clean text, and split into overlapping chunks to preserve local context.
-2. **Embedding**: Each chunk is transformed into a high-dimensional vector using OpenAI's `text-embedding-3-small`.
+2. **Embedding**: Each chunk is transformed into a high-dimensional vector using the specified `EMBEDDING_MODEL` (e.g., `gemini-embedding-2-preview`).
 3. **Storage**: Vectors and original text are stored in Supabase with metadata including `user_id` and `chat_id`.
 4. **Retrieval**: When a user asks a question, the query is embedded and compared against stored chunks using cosine similarity, filtered by the current `chat_id`.
-5. **Generation**: The retrieved context, combined with the recent chat history, is sent to the LLM (GPT-4o) with a strict "answer-only-from-context" system prompt.
+5. **Generation**: The retrieved context, combined with the recent chat history, is sent to the LLM (e.g., `openai/gpt-oss-120b`) with a strict "answer-only-from-context" system prompt.
 
 ## 📈 Future Enhancements
 
