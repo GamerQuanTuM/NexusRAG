@@ -5,7 +5,6 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "chromadb",
     "fastapi",
     "langchain",
     "langchain-community",
@@ -16,10 +15,9 @@ dependencies = [
     "langgraph",
     "pydantic-settings",
     "pypdf",
+    "python-docx>=1.2.0",
     "python-dotenv",
     "python-multipart",
-    "sentence-transformers",
     "supabase",
-    "unstructured",
     "uvicorn",
 ]

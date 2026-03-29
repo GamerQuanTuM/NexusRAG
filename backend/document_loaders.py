@@ -5,10 +5,6 @@ from langchain_community.document_loaders import (
     PyPDFLoader,
     TextLoader,
     CSVLoader,
-    UnstructuredMarkdownLoader,
-    UnstructuredWordDocumentLoader,
-    UnstructuredPowerPointLoader,
-    UnstructuredExcelLoader,
     WebBaseLoader
 )
 from langchain_core.documents import Document
@@ -16,6 +12,26 @@ import logging
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
+
+# Lightweight Word doc support
+try:
+    import docx
+    HAS_DOCX = True
+except ImportError:
+    HAS_DOCX = False
+    logger.warning("'python-docx' not installed. Word document support via lightweight loader is disabled.")
+
+# Optional heavy loaders (require 'unstructured' package)
+try:
+    from langchain_community.document_loaders import UnstructuredMarkdownLoader
+    from langchain_community.document_loaders import UnstructuredWordDocumentLoader
+    from langchain_community.document_loaders import UnstructuredPowerPointLoader
+    from langchain_community.document_loaders import UnstructuredExcelLoader
+    HAS_UNSTRUCTURED = True
+except ImportError:
+    HAS_UNSTRUCTURED = False
+    logger.warning("'unstructured' not installed. Word, PPT, Excel, and Markdown loaders are disabled.")
+
 
 class DocumentLoader:
     """Handles loading documents from various file formats"""
@@ -55,14 +71,34 @@ class DocumentLoader:
             elif file_type == 'text':
                 loader = TextLoader(file_path, encoding='utf-8')
             elif file_type == 'markdown':
-                loader = UnstructuredMarkdownLoader(file_path)
+                if not HAS_UNSTRUCTURED:
+                    # Fallback: read markdown as plain text
+                    loader = TextLoader(file_path, encoding='utf-8')
+                else:
+                    loader = UnstructuredMarkdownLoader(file_path)
             elif file_type == 'csv':
                 loader = CSVLoader(file_path)
             elif file_type == 'word':
-                loader = UnstructuredWordDocumentLoader(file_path)
+                if HAS_UNSTRUCTURED:
+                    loader = UnstructuredWordDocumentLoader(file_path)
+                elif HAS_DOCX:
+                    # Lightweight fallback using python-docx
+                    doc = docx.Document(file_path)
+                    text = "\n".join([para.text for para in doc.paragraphs if para.text.strip()])
+                    docs = [Document(page_content=text, metadata=metadata or {})]
+                    if metadata:
+                        for d in docs:
+                            d.metadata.update(metadata)
+                    return docs
+                else:
+                    raise ValueError("Word document support requires either 'unstructured' or 'python-docx'. Please upload a .pdf or .txt file instead.")
             elif file_type == 'powerpoint':
+                if not HAS_UNSTRUCTURED:
+                    raise ValueError("PowerPoint support requires the 'unstructured' package. Please upload a .pdf or .txt file instead.")
                 loader = UnstructuredPowerPointLoader(file_path)
             elif file_type == 'excel':
+                if not HAS_UNSTRUCTURED:
+                    raise ValueError("Excel support requires the 'unstructured' package. Please upload a .pdf or .txt file instead.")
                 loader = UnstructuredExcelLoader(file_path)
             else:
                 raise ValueError(f"Unsupported file type: {file_type}")
@@ -145,5 +181,5 @@ class DocumentLoader:
             # Clean up temporary file
             try:
                 os.unlink(tmp_file_path)
-            except:
+            except OSError:
                 pass
