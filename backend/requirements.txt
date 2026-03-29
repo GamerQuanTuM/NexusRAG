@@ -9,6 +9,9 @@ langchain-openai
 supabase==1.1.1
 python-dotenv==1.0.0
 pydantic-settings==2.1.0
-pypdf==3.17.4
+sentence-transformers
+chromadb
+pypdf
+unstructured
 tiktoken
 langchain-text-splitters

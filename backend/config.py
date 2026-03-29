@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     chunk_overlap: int = int(os.getenv("CHUNK_OVERLAP", "200"))
 
     # CORS Configuration
-    cors_origins: list = ["http://localhost:3000", "http://localhost:8000"]
+    cors_origins: list = ["*"]
 
     @field_validator("debug", mode="before")
     @classmethod
