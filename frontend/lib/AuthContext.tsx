@@ -34,11 +34,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       document.cookie = "nexus_auth=true; path=/; max-age=2592000; SameSite=Lax;"; // 30 days
     } else {
       document.cookie = "nexus_auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-      if (window.location.pathname !== '/auth') {
+      const publicPaths = ['/auth', '/reset-password'];
+      if (!publicPaths.includes(window.location.pathname)) {
         router.push('/auth');
       }
     }
   }, [router]);
+
 
   const login = (newUser: User) => {
     setUser(newUser);

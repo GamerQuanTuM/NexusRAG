@@ -4,12 +4,14 @@ import { useAuth } from '@/lib/AuthContext';
 import RAGChat from '@/components/RAGChat';
 import Sidebar from '@/components/Sidebar';
 import DocumentUpload from '@/components/DocumentUpload';
-import { Loader2, Database, X } from 'lucide-react';
+import { Loader2, Database, X, Menu } from 'lucide-react';
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Home() {
   const { user } = useAuth();
   const [showDocs, setShowDocs] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   if (!user) {
     return (
@@ -26,16 +28,59 @@ export default function Home() {
         <Sidebar />
       </div>
 
+      {/* Mobile Sidebar Overlay */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 z-40 md:hidden"
+              onClick={() => setMobileMenuOpen(false)}
+            />
+            <motion.div
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed left-0 top-0 bottom-0 w-[280px] z-50 md:hidden"
+            >
+              <div className="h-full bg-gray-50 dark:bg-[#171717]">
+                <Sidebar />
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col relative h-full max-w-full">
-        <header className="flex h-14 items-center justify-between px-4 border-b border-gray-100 dark:border-gray-800 md:hidden bg-white dark:bg-[#212121] shrink-0">
-           <span className="font-semibold text-lg">NexusRAG</span>
+        {/* Mobile Header */}
+        <header className="flex h-14 items-center justify-between px-3 md:px-4 border-b border-gray-100 dark:border-gray-800 md:hidden bg-white dark:bg-[#212121] shrink-0">
+          <button
+            onClick={() => setMobileMenuOpen(true)}
+            className="p-2 -ml-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          >
+            <Menu className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+          </button>
+          <span className="font-semibold text-base">NexusRAG</span>
+          <button
+            onClick={() => setShowDocs(!showDocs)}
+            className="p-2 -mr-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          >
+            {showDocs ? (
+              <X className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+            ) : (
+              <Database className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+            )}
+          </button>
         </header>
 
         <RAGChat />
 
-        {/* Floating Upload Button */}
-        <div className="absolute top-4 right-4 z-40">
+        {/* Floating Upload Button - Desktop only */}
+        <div className="absolute top-4 right-4 z-40 hidden md:block">
           <button 
             onClick={() => setShowDocs(!showDocs)}
             className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-[#2F2F2F] border border-gray-200 dark:border-gray-700 rounded-full shadow-sm hover:bg-gray-50 dark:hover:bg-[#3C3C3C] text-sm font-medium transition-colors"
@@ -51,8 +96,8 @@ export default function Home() {
 
         {/* Upload Overlay */}
         {showDocs && (
-          <div className="absolute top-16 right-4 w-96 max-w-[calc(100vw-2rem)] z-50 bg-white dark:bg-[#2F2F2F] rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-             <div className="max-h-[80vh] overflow-y-auto">
+          <div className="absolute top-16 right-4 left-4 sm:left-auto md:left-auto md:w-96 md:max-w-[calc(100vw-2rem)] z-50 bg-white dark:bg-[#2F2F2F] rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+             <div className="max-h-[70vh] sm:max-h-[80vh] overflow-y-auto">
                <DocumentUpload />
              </div>
           </div>

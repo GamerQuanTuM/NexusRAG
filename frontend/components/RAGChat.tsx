@@ -217,7 +217,7 @@ export default function RAGChat() {
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-[#212121]">
-      <div className="flex-1 overflow-y-auto px-4 sm:px-6 relative custom-scrollbar pb-32">
+      <div className="flex-1 overflow-y-auto px-3 sm:px-6 relative custom-scrollbar pb-36 sm:pb-32">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center flex-1 justify-center h-full text-center px-4 max-w-2xl mx-auto opacity-70">
             <div className="w-16 h-16 bg-gray-100 dark:bg-[#2F2F2F] rounded-full flex items-center justify-center mb-6 shadow-sm border border-gray-200 dark:border-gray-800">
@@ -321,26 +321,26 @@ export default function RAGChat() {
                         </ReactMarkdown>
                       </div>
 
-                      {/* Action buttons — visible on hover for user messages */}
-                      {message.role === 'user' && hoveredMessageId === message.id && !isLoading && (
-                        <div className="flex items-center gap-1 mt-2 animate-in fade-in duration-150">
+                      {/* Action buttons — visible on hover/touch for user messages */}
+                      {message.role === 'user' && (
+                        <div className="flex items-center gap-1 mt-2 opacity-0 sm:opacity-0 md:opacity-0 lg:opacity-100 group-hover/msg:opacity-100 transition-opacity">
                           <button
                             onClick={() => startEditing(message)}
-                            className="p-1.5 rounded-md text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-all"
+                            className="p-2 rounded-md text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-all touch-manipulation"
                             title="Edit message"
                           >
-                            <Pencil className="w-3.5 h-3.5" />
+                            <Pencil className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDeleteMessage(message.id)}
                             disabled={deletingMessageId === message.id}
-                            className="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all disabled:opacity-50"
+                            className="p-2 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all disabled:opacity-50 touch-manipulation"
                             title="Delete message"
                           >
                             {deletingMessageId === message.id ? (
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              <Loader2 className="w-4 h-4 animate-spin" />
                             ) : (
-                              <Trash2 className="w-3.5 h-3.5" />
+                              <Trash2 className="w-4 h-4" />
                             )}
                           </button>
                         </div>
@@ -384,7 +384,7 @@ export default function RAGChat() {
       </div>
 
       {/* Input Form at bottom */}
-      <div className="absolute bottom-0 inset-x-0 w-full bg-linear-to-t from-white via-white to-transparent dark:from-[#212121] dark:via-[#212121] dark:to-transparent pt-6 pb-6 px-4">
+      <div className="absolute bottom-0 inset-x-0 w-full bg-linear-to-t from-white via-white to-transparent dark:from-[#212121] dark:via-[#212121] dark:to-transparent pt-4 pb-4 sm:pt-6 sm:pb-6 px-3 sm:px-4">
         <div className="max-w-3xl mx-auto">
           <form onSubmit={handleSubmit} className="relative shadow-[0_0_15px_rgba(0,0,0,0.05)] dark:shadow-[0_0_15px_rgba(0,0,0,0.1)] rounded-2xl bg-gray-50 dark:bg-[#2F2F2F] border border-gray-200 dark:border-gray-700 focus-within:ring-1 focus-within:ring-gray-300 dark:focus-within:ring-gray-600 transition-shadow">
             <textarea
@@ -397,19 +397,19 @@ export default function RAGChat() {
                 }
               }}
               placeholder="Message Nexus..."
-              className="w-full bg-transparent pl-4 pr-12 py-4 max-h-48 resize-none focus:outline-none text-gray-900 dark:text-gray-100 rounded-2xl custom-scrollbar m-0 min-h-[56px]"
+              className="w-full bg-transparent pl-3 sm:pl-4 pr-12 py-3 sm:py-4 max-h-48 resize-none focus:outline-none text-gray-900 dark:text-gray-100 rounded-2xl custom-scrollbar m-0 min-h-[48px] sm:min-h-[56px]"
               disabled={isLoading || !activeChatId}
               rows={1}
             />
             <button
                type="submit"
                disabled={isLoading || !input.trim() || !activeChatId}
-               className="absolute right-3 bottom-3 p-1.5 bg-black dark:bg-white text-white dark:text-black rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-opacity"
+               className="absolute right-2.5 sm:right-3 bottom-2.5 sm:bottom-3 p-2 sm:p-1.5 bg-black dark:bg-white text-white dark:text-black rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-opacity active:scale-95"
             >
-               <Send className="w-4 h-4 ml-0.5" />
+               <Send className="w-4 h-4 sm:w-4 sm:h-4 ml-0.5" />
             </button>
           </form>
-          <div className="text-center text-xs text-gray-500 dark:text-gray-400 mt-3 font-medium">
+          <div className="text-center text-xs text-gray-500 dark:text-gray-400 mt-2 sm:mt-3 font-medium">
              Nexus can make mistakes. Consider verifying your sources.
           </div>
         </div>

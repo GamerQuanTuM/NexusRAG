@@ -13,7 +13,7 @@ type Chat = {
 };
 
 export default function Sidebar() {
-  const { user, activeChatId, setActiveChatId, logout, refreshTrigger, triggerRefresh } = useAuth();
+  const { user, activeChatId, setActiveChatId, logout, refreshTrigger } = useAuth();
   const [chats, setChats] = useState<Chat[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isCreating, setIsCreating] = useState(false);

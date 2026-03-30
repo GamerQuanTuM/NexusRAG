@@ -57,15 +57,23 @@ export default function ResetPasswordPage() {
     try {
       await apiClient.resetPassword(password, token);
       setSuccess(true);
-      setTimeout(() => {
-        router.push('/auth');
-      }, 3000);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to reset password.');
     } finally {
       setIsLoading(false);
     }
   };
+
+  // Automatic redirect after success
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => {
+        router.replace('/auth');
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [success, router]);
+
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">

@@ -88,7 +88,7 @@ export default function LoginPage() {
         transition={{ delay: 0.1 }}
         className="mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10"
       >
-        <div className="bg-slate-900/50 backdrop-blur-xl border border-white/10 shadow-2xl sm:rounded-3xl overflow-hidden">
+        <div className="bg-slate-900/50 backdrop-blur-xl border border-white/10 shadow-2xl sm:rounded-3xl overflow-hidden mx-3 lg:mx-0 rounded-xl">
           {/* Tab Selector - Hide in Forgot mode */}
           <div className={`flex p-1.5 bg-black/40 border-b border-white/5 transition-all duration-300 ${authState === 'forgot' ? 'h-0 opacity-0 overflow-hidden py-0' : 'h-auto opacity-100'}`}>
             <button
@@ -235,9 +235,9 @@ export default function LoginPage() {
           </div>
         </div>
         
-        <p className="mt-8 text-center text-[10px] text-slate-600 uppercase tracking-widest font-bold">
+        {/* <p className="mt-8 text-center text-[10px] text-slate-600 uppercase tracking-widest font-bold">
           Protected by AES-256 Neural Encryption
-        </p>
+        </p> */}
       </motion.div>
     </div>
   );
