@@ -4,13 +4,13 @@ import type { NextRequest } from 'next/server';
 export function proxy(request: NextRequest) {
   const isAuth = request.cookies.has('nexus_auth');
   const path = request.nextUrl.pathname;
-  const isLoginPage = path === '/login';
+  const isAuthPage = path === '/auth' || path === '/reset-password';
 
-  if (!isAuth && !isLoginPage) {
-    return NextResponse.redirect(new URL('/login', request.url));
+  if (!isAuth && !isAuthPage) {
+    return NextResponse.redirect(new URL('/auth', request.url));
   }
   
-  if (isAuth && isLoginPage) {
+  if (isAuth && isAuthPage) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 

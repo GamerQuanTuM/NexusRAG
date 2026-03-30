@@ -50,6 +50,14 @@ export const apiClient = {
   login: (email: string, password: string) => 
     api.post('/auth/login', { email, password }),
 
+  forgotPassword: (email: string) =>
+    api.post('/auth/forgot-password', { email }),
+
+  resetPassword: (password: string, token: string) =>
+    api.post('/auth/reset-password', { password }, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    }),
+
   // Chats
   getChats: (userId: string) => 
     api.get('/chats', { params: { user_id: userId } }),
@@ -57,11 +65,24 @@ export const apiClient = {
   createChat: (userId: string, title?: string) => 
     api.post('/chats', { user_id: userId, title }),
 
+  deleteChat: (chatId: string) =>
+    api.delete(`/chats/${chatId}`),
+
+  deleteAllChats: (userId: string) =>
+    api.delete('/chats', { params: { user_id: userId } }),
+
   getMessages: (chatId: string) => 
     api.get(`/chats/${chatId}/messages`),
 
   getChatDocuments: (chatId: string) => 
     api.get(`/chats/${chatId}/documents`),
+
+  // Messages
+  deleteMessage: (messageId: string) =>
+    api.delete(`/messages/${messageId}`),
+
+  editMessage: (messageId: string, content: string, useGraph: boolean = true) =>
+    api.put(`/messages/${messageId}`, { content, use_graph: useGraph }),
 
   // Query
   query: (data: { question: string, use_graph: boolean, chat_id?: string | null, user_id?: string | null }) => 

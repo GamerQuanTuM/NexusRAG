@@ -93,6 +93,16 @@ class AuthRequest(BaseModel):
     email: str
     password: str
 
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+class ResetPasswordRequest(BaseModel):
+    password: str
+
+class EditMessageRequest(BaseModel):
+    content: str
+    use_graph: bool = False
+
 class QueryResponse(BaseModel):
     answer: str
     sources: List[Dict[str, Any]]
@@ -313,10 +323,25 @@ async def get_document_count(
 
 @app.post("/auth/register")
 async def register(request: AuthRequest):
-    client = SupabaseClient.get_client()
+    # Using Service Role Key to bypass email confirmation
+    admin_client = SupabaseClient.get_service_role_client()
     try:
-        res = client.auth.sign_up({"email": request.email, "password": request.password})
-        return {"user": res.user, "session": res.session}
+        # Create user as pre-confirmed
+        admin_client.auth.admin.create_user({
+            "email": request.email,
+            "password": request.password,
+            "email_confirm": True
+        })
+        
+        # After creating confirmed user, we need to sign in to get a session for the client
+        # We'll use the regular client for this to respect standard auth flows
+        public_client = SupabaseClient.get_client()
+        login_res = public_client.auth.sign_in_with_password({
+            "email": request.email, 
+            "password": request.password
+        })
+        
+        return {"user": login_res.user, "session": login_res.session}
     except Exception as e:
         logger.error(f"Registration failed: {e}")
         raise HTTPException(status_code=400, detail=str(e))
@@ -330,6 +355,39 @@ async def login(request: AuthRequest):
     except Exception as e:
         logger.error(f"Login failed: {e}")
         raise HTTPException(status_code=401, detail="Invalid credentials")
+
+@app.post("/auth/forgot-password")
+async def forgot_password(request: ForgotPasswordRequest):
+    client = SupabaseClient.get_client()
+    try:
+        # Request reset email from Supabase
+        client.auth.reset_password_for_email(request.email)
+        return {"success": True, "message": "Password reset link sent if account exists."}
+    except Exception as e:
+        logger.error(f"Forgot password request failed: {e}")
+        # We generally don't want to confirm if an email exists for security.
+        return {"success": True, "message": "Password reset link sent if account exists."}
+
+@app.post("/auth/reset-password")
+async def reset_password(request: ResetPasswordRequest, req_obj: Request):
+    # This requires an active session (user clicked reset link)
+    # We verify that a Bearer token or cookie is present.
+    # For this simplified implementation, we assume the client provides the token in headers.
+    client = SupabaseClient.get_client()
+    auth_header = req_obj.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Unauthorized session required")
+    
+    token = auth_header.split(" ")[1]
+    
+    try:
+        # Update user's password using the access token
+        client.auth.set_session(token, "") 
+        res = client.auth.update_user({"password": request.password})
+        return {"success": True, "user": res.user}
+    except Exception as e:
+        logger.error(f"Reset password failed: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/chats")
 async def create_chat(request: ChatRequest):
@@ -350,6 +408,176 @@ async def get_chats(user_id: str):
     except Exception as e:
         logger.error(f"Failed to get chats: {e}")
         raise HTTPException(status_code=400, detail=str(e))
+
+@app.delete("/chats/{chat_id}")
+async def delete_chat(
+    chat_id: str,
+    vector_store: VectorStoreManager = Depends(get_vector_store)
+):
+    """Delete a single chat, its messages, and its associated documents from the vector store"""
+    client = SupabaseClient.get_client()
+    try:
+        # 1. Delete documents from vector store that belong to this chat
+        try:
+            doc_res = client.table(settings.vector_store_table_name).select("id").filter(
+                "metadata->>chat_id", "eq", chat_id
+            ).execute()
+            if doc_res.data:
+                doc_ids = [row["id"] for row in doc_res.data]
+                vector_store.delete_documents(doc_ids)
+                logger.info(f"Deleted {len(doc_ids)} vector documents for chat {chat_id}")
+        except Exception as e:
+            logger.warning(f"Error deleting vector documents for chat {chat_id}: {e}")
+
+        # 2. Delete all messages belonging to this chat
+        client.table("messages").delete().eq("chat_id", chat_id).execute()
+
+        # 3. Delete the chat itself
+        client.table("chats").delete().eq("id", chat_id).execute()
+
+        return {"success": True, "message": f"Chat {chat_id} and all associated data deleted"}
+    except Exception as e:
+        logger.error(f"Failed to delete chat: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/chats")
+async def delete_all_chats(
+    user_id: str,
+    vector_store: VectorStoreManager = Depends(get_vector_store)
+):
+    """Delete ALL chats, messages, and documents for a user"""
+    client = SupabaseClient.get_client()
+    try:
+        # 1. Get all chat IDs for this user
+        chats_res = client.table("chats").select("id").eq("user_id", user_id).execute()
+        chat_ids = [c["id"] for c in (chats_res.data or [])]
+
+        if not chat_ids:
+            return {"success": True, "message": "No chats to delete"}
+
+        # 2. Delete vector documents for each chat
+        for cid in chat_ids:
+            try:
+                doc_res = client.table(settings.vector_store_table_name).select("id").filter(
+                    "metadata->>chat_id", "eq", cid
+                ).execute()
+                if doc_res.data:
+                    doc_ids = [row["id"] for row in doc_res.data]
+                    vector_store.delete_documents(doc_ids)
+            except Exception as e:
+                logger.warning(f"Error deleting vector docs for chat {cid}: {e}")
+
+        # 3. Delete all messages for those chats
+        for cid in chat_ids:
+            client.table("messages").delete().eq("chat_id", cid).execute()
+
+        # 4. Delete all chats
+        client.table("chats").delete().eq("user_id", user_id).execute()
+
+        return {"success": True, "message": f"Deleted {len(chat_ids)} chats and all associated data"}
+    except Exception as e:
+        logger.error(f"Failed to delete all chats: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/messages/{message_id}")
+async def delete_message(message_id: str):
+    """Delete a user message and its paired assistant response.
+    The assistant response is defined as the next message (by created_at) in the same chat with role='assistant'.
+    """
+    client = SupabaseClient.get_client()
+    try:
+        # 1. Fetch the target message
+        msg_res = client.table("messages").select("*").eq("id", message_id).execute()
+        if not msg_res.data:
+            raise HTTPException(status_code=404, detail="Message not found")
+        msg = msg_res.data[0]
+
+        ids_to_delete = [message_id]
+
+        # 2. If it's a user message, find and delete the paired assistant response
+        if msg["role"] == "user":
+            pair_res = (
+                client.table("messages")
+                .select("id")
+                .eq("chat_id", msg["chat_id"])
+                .eq("role", "assistant")
+                .gt("created_at", msg["created_at"])
+                .order("created_at", desc=False)
+                .limit(1)
+                .execute()
+            )
+            if pair_res.data:
+                ids_to_delete.append(pair_res.data[0]["id"])
+
+        # 3. Delete all identified messages
+        for mid in ids_to_delete:
+            client.table("messages").delete().eq("id", mid).execute()
+
+        return {"success": True, "deleted_ids": ids_to_delete}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to delete message: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/messages/{message_id}")
+async def edit_message(
+    message_id: str,
+    body: EditMessageRequest,
+    rag_pipeline: RAGPipeline = Depends(get_rag_pipeline)
+):
+    """Edit a user message: updates the message content, deletes the old assistant response,
+    and all subsequent messages, then generates a new response.
+    """
+    client = SupabaseClient.get_client()
+    try:
+        # 1. Fetch the message
+        msg_res = client.table("messages").select("*").eq("id", message_id).execute()
+        if not msg_res.data:
+            raise HTTPException(status_code=404, detail="Message not found")
+        msg = msg_res.data[0]
+        chat_id = msg["chat_id"]
+
+        if msg["role"] != "user":
+            raise HTTPException(status_code=400, detail="Can only edit user messages")
+
+        # 2. Delete all messages that come AFTER this message (by created_at)
+        subsequent_res = (
+            client.table("messages")
+            .select("id")
+            .eq("chat_id", chat_id)
+            .gt("created_at", msg["created_at"])
+            .execute()
+        )
+        for s in (subsequent_res.data or []):
+            client.table("messages").delete().eq("id", s["id"]).execute()
+
+        # 3. Delete the original user message too (the pipeline will re-insert it)
+        client.table("messages").delete().eq("id", message_id).execute()
+
+        # 4. Get the user_id from the chat
+        chat_res = client.table("chats").select("user_id").eq("id", chat_id).execute()
+        user_id = chat_res.data[0]["user_id"] if chat_res.data else None
+
+        # 5. Re-query the RAG pipeline with the edited content
+        result = rag_pipeline.query(
+            question=body.content,
+            use_graph=body.use_graph,
+            chat_id=chat_id,
+            user_id=user_id
+        )
+
+        return {
+            "success": True,
+            "answer": result["answer"],
+            "sources": result["sources"],
+            "question": body.content,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to edit message: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/chats/{chat_id}/messages")
 async def get_messages(chat_id: str):
